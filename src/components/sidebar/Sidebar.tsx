@@ -10,6 +10,7 @@ import {
 import { NavLink } from "react-router-dom";
 import "./Sidebar.scss";
 import { useAuth } from "../../hooks/useAuth";
+import logo from "../../assets/logo.svg";
 
 function Sidebar() {
   const { currentUser, logout } = useAuth();
@@ -25,7 +26,7 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__logo">
-        <img src="/logo.svg" alt="FinTrack" />
+        <img src={logo} alt="FinTrack" />
       </div>
 
       <nav className="sidebar__menu">
