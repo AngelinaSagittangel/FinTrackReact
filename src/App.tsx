@@ -24,7 +24,7 @@ function App() {
         <WalletsProvider>
           <CategoriesProvider>
             <BudgetsProvider>
-              <BrowserRouter>
+              <BrowserRouter basename="/FinTrackReact">
                 <Suspense fallback={<div>Загрузка страницы...</div>}>
                   <Routes>
                     <Route path="/login" element={<Login />} />
