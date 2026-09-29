@@ -24,7 +24,7 @@ function App() {
         <WalletsProvider>
           <CategoriesProvider>
             <BudgetsProvider>
-              <BrowserRouter basename="/FinTrackReact">
+              <BrowserRouter basename={import.meta.env.BASE_URL}>
                 <Suspense fallback={<div>Загрузка страницы...</div>}>
                   <Routes>
                     <Route path="/login" element={<Login />} />
