@@ -1,0 +1,19 @@
+.action-button {
+  height: 56px;
+  width: 120px;
+  box-sizing: border-box;
+  padding: 8px;
+  border: none;
+  border-radius: 16px;
+  background: var(--button-color);
+  color: var(--text-color);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    filter: saturate(1.8);
+  }
+}

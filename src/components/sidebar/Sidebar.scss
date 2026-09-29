@@ -1,0 +1,82 @@
+@use "../../styles/variables" as *;
+
+.sidebar {
+  padding: 16px;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100vh;
+
+  &__logo {
+    flex: 0 0 auto;
+
+    img {
+      width: 180px;
+    }
+  }
+
+  &__menu {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    gap: 16px;
+
+    .menu-item {
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  &__bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: fixed;
+    bottom: 16px;
+
+    .bottom-item {
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  &__profile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+    .bottom-item {
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 0 auto;
+      width: 100%;
+    }
+
+    button {
+      flex: 0 0 auto;
+      padding: 8px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border: none;
+      background: transparent;
+      color: $text-secondary;
+
+      cursor: pointer;
+
+      &:hover {
+        color: $accent;
+      }
+    }
+  }
+}

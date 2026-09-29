@@ -1,0 +1,145 @@
+@use "sass:color";
+@use "../../styles/variables" as *;
+
+.transaction-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid $accent-light;
+    border-radius: 8px;
+    background: $surface;
+    color: $text-primary;
+    font-size: 16px;
+    outline: none;
+
+    &:focus {
+      border-color: $accent;
+    }
+  }
+
+  &__selects {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid $accent-light;
+    border-radius: 8px;
+    background: $surface;
+    color: $text-primary;
+    font-size: 16px;
+    outline: none;
+    cursor: pointer;
+
+    &:focus {
+      border-color: $accent;
+    }
+  }
+
+  &__button {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    background: $accent;
+    color: $surface;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover {
+      background: color.adjust($accent, $lightness: -8%);
+    }
+  }
+
+  &__cancel {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid $accent-light;
+    border-radius: 8px;
+    background: $surface;
+    color: $text-secondary;
+    font-size: 16px;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $accent;
+      background: $accent-light;
+      color: $accent;
+    }
+  }
+
+  &__category {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    select {
+      flex: 1;
+    }
+
+    button {
+      padding: 12px 16px;
+      border: 1px solid $accent-light;
+      border-radius: 8px;
+      background: $accent-light;
+      color: $accent;
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+
+      &:hover {
+        background: $accent;
+        color: $surface;
+      }
+    }
+  }
+
+  &__new-category {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    input {
+      flex: 1;
+    }
+
+    button {
+      padding: 12px 16px;
+      border: 1px solid $accent-light;
+      border-radius: 8px;
+      background: $surface;
+      color: $text-primary;
+      font-size: 16px;
+      cursor: pointer;
+
+      &:hover {
+        border-color: $accent;
+        color: $accent;
+      }
+
+      &:first-of-type {
+        background: $accent;
+        border-color: $accent;
+        color: $surface;
+
+        &:hover {
+          background: color.adjust($accent, $lightness: -8%);
+        }
+      }
+    }
+  }
+
+  &__error {
+    color: $error;
+    font-size: 13px;
+  }
+}

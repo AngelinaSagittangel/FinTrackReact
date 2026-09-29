@@ -1,0 +1,59 @@
+@use "../../styles/variables" as *;
+
+.wallet-card {
+  background: $surface;
+  min-width: 200px;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  border: 1px solid $accent-light;
+  box-shadow: $box-shadow-card;
+
+  &__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: $accent-light;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $accent;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__name {
+    font-size: 14px;
+    color: $text-secondary;
+    font-weight: 500;
+  }
+
+  &__amount {
+    font-size: 18px;
+    color: $text-primary;
+    font-weight: 600;
+  }
+
+  & > button {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    border: 1px solid $accent-light;
+    border-radius: 7px;
+    background: transparent;
+    color: $text-secondary;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+      background: $accent-light;
+      color: $accent;
+    }
+  }
+}

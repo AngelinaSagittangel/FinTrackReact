@@ -1,0 +1,41 @@
+@use "variables" as *;
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  background-color: $bg-primary;
+  font-family: "Manrope", sans-serif;
+  color: $text-primary;
+}
+
+a {
+  text-decoration: none;
+  color: $text-primary;
+  font-size: 16px;
+
+  &:hover {
+    border-radius: 8px;
+    box-shadow: $box-shadow-hover;
+  }
+
+  &.active {
+    background: $accent-light;
+    border-radius: 8px;
+    box-shadow: $box-shadow-card;
+  }
+}
+
+a.active {
+  color: $accent;
+}

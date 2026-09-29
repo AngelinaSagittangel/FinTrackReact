@@ -1,0 +1,60 @@
+<svg width="250" height="56" viewBox="0 0 250 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Logo mark -->
+  <g>
+    <rect
+      x="2"
+      y="2"
+      width="52"
+      height="52"
+      rx="16"
+      fill="#3F7D68"
+    />
+
+    <!-- F -->
+    <path
+      d="M17 39V17H37"
+      stroke="white"
+      stroke-width="4"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <path
+      d="M17 27H32"
+      stroke="white"
+      stroke-width="4"
+      stroke-linecap="round"
+    />
+
+    <!-- Growth line -->
+    <path
+      d="M27 38L33 32L37 34L44 24"
+      stroke="#C8AD61"
+      stroke-width="3.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <circle
+      cx="44"
+      cy="24"
+      r="2.5"
+      fill="#C8AD61"
+    />
+  </g>
+
+  <!-- Wordmark -->
+  <text
+    x="70"
+    y="37"
+    font-family="Manrope, Arial, sans-serif"
+    font-size="27"
+    font-weight="700"
+    letter-spacing="-0.8"
+    fill="#202320"
+  >
+    FinTrack
+  </text>
+
+</svg>
