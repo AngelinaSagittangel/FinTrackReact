@@ -1,75 +1,150 @@
-# React + TypeScript + Vite
+# FinTrack
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Описание проекта
 
-Currently, two official plugins are available:
+**FinTrack** — веб-приложение для управления личными финансами, разработанное на **React и TypeScript**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Приложение позволяет вести учет доходов и расходов, управлять кошельками и категориями, создавать бюджеты, выполнять переводы между собственными кошельками и анализировать финансовые показатели.
 
-## React Compiler
+Проект разработан в двух версиях:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend-версия** — данные хранятся в `localStorage`;
+- **Fullstack-версия** — React-приложение взаимодействует с REST API на Node.js и Express, а данные хранятся в PostgreSQL.
 
-## Expanding the ESLint configuration
+> **Цель проекта**
+>
+> Создать полноценное fullstack-приложение и на практике отработать работу React с REST API, авторизацию пользователей, работу с базой данных, управление состоянием приложения и построение финансовой аналитики.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+> **Примечание:** на текущем этапе проекта реализована только desktop-версия интерфейса.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Ключевые возможности
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Авторизация
 
-```
+- регистрация новых пользователей;
+- вход в систему;
+- выход из аккаунта;
+- защищенные маршруты;
+- JWT-аутентификация;
+- сохранение авторизации через `httpOnly` cookie.
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+### Профиль пользователя
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- просмотр данных профиля;
+- изменение имени;
+- изменение email;
+- изменение пароля;
+- удаление аккаунта вместе со связанными финансовыми данными.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Кошельки
 
-```
+Пользователь может создавать и удалять собственные кошельки.
+
+Поддерживаются следующие типы:
+
+- наличные;
+- банковская карта;
+- накопления;
+- инвестиционный счет.
+
+Для каждого кошелька хранится начальный баланс и связанные финансовые операции.
+
+### Категории
+
+Реализована работа с категориями доходов и расходов:
+
+- создание категории;
+- редактирование категории;
+- удаление категории;
+- выбор типа операции;
+
+### Доходы и расходы
+
+Пользователь может:
+
+- создавать финансовые операции;
+- редактировать операции;
+- удалять операции;
+- указывать сумму;
+- выбирать дату;
+- выбирать кошелек;
+- выбирать категорию;
+- добавлять описание.
+
+### Переводы между кошельками
+
+Реализована возможность переводить средства между собственными кошельками пользователя.
+
+При переводе учитываются:
+
+- кошелек-источник;
+- кошелек-получатель;
+- сумма;
+- дата операции.
+
+### Бюджеты
+
+Пользователь может создавать бюджеты для категорий на определенный месяц.
+
+Для каждого бюджета отображается:
+
+- установленный лимит;
+- фактические расходы;
+- оставшаяся сумма;
+- процент использования бюджета.
+
+### Аналитика
+
+Страница аналитики предоставляет информацию о финансовом состоянии пользователя:
+
+- доходы;
+- расходы;
+- баланс;
+- динамика финансовых показателей;
+- статистика по категориям;
+- статистика по дням;
+- сравнение с предыдущим периодом;
+- изменение показателей в абсолютных и процентных значениях.
+
+Для визуализации данных используется `Recharts`.
+
+### Управление состоянием
+
+Состояние основных сущностей приложения управляется с помощью **React Context API** и Provider-компонентов.
+
+Используются отдельные контексты для:
+
+- авторизации;
+- транзакций;
+- кошельков;
+- категорий;
+- бюджетов;
+- переводов.
+
+
+## Стек технологий
+
+- **Frontend:** React 19, TypeScript.
+- **Сборка:** Vite.
+- **HTTP-клиент:** Fetch API для взаимодействия с REST API.
+- **Управление состоянием:** React Context API.
+- **Маршрутизация:** React Router.
+- **Формы и валидация:** собственная клиентская валидация на TypeScript.
+- **Визуализация данных:** Recharts.
+- **Стили:** SCSS.
+- **Иконки:** Lucide React.
+- **Backend:** Node.js, Express, TypeScript.
+- **ORM:** Prisma.
+- **База данных:** PostgreSQL.
+- **Авторизация:** JWT, `httpOnly` cookies.
+- **Хеширование паролей:** bcrypt.
+
+## Запуск проекта
+
+### Backend
+`cd backend` -> `npm i` -> `npm run dev`
+
+### Frontend
+`npm i` -> `npm run dev`
