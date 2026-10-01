@@ -7,6 +7,10 @@ function formatDate(year: number, month: number, day: number) {
   )}`;
 }
 
+function getDateKey(date: string) {
+  return date.slice(0, 10);
+}
+
 export function getStartDate(period: 1 | 3 | 6 | 12) {
   const today = new Date();
   const month = today.getMonth();
@@ -21,7 +25,11 @@ export function getTransactionsByPeriod(
 ) {
   const startDate = getStartDate(period);
 
-  return transactions.filter((item) => item.date >= startDate);
+  return transactions.filter((item) => {
+    const date = getDateKey(item.date);
+
+    return date >= startDate;
+  });
 }
 
 export function getPeriodSummary(transactions: TransactionType[]) {
@@ -60,7 +68,8 @@ export function getMonthlyStatistics(
   const monthlyStats = new Map<string, ReturnType<typeof getPeriodSummary>>();
 
   periodTransactions.forEach((item) => {
-    const month = item.date.slice(0, -3);
+    const date = getDateKey(item.date);
+    const month = date.slice(0, 7);
 
     if (months.has(month)) {
       const monthTransactions = months.get(month);
@@ -89,19 +98,23 @@ export function getDailyStatistics(transactions: TransactionType[]) {
   const endDate = formatDate(year, month + 1, 1);
 
   const previousTransactions = transactions.filter((item) => {
-    return item.date < startDate;
+    const date = getDateKey(item.date);
+
+    return date < startDate;
   });
 
   const previousBalance = getPeriodSummary(previousTransactions).balance;
 
   const currentMonthTransactions = transactions.filter((item) => {
-    return item.date >= startDate && item.date < endDate;
+    const date = getDateKey(item.date);
+
+    return date >= startDate && date < endDate;
   });
 
   const days = new Map<string, TransactionType[]>();
 
   currentMonthTransactions.forEach((item) => {
-    const day = item.date;
+    const day = getDateKey(item.date);
 
     if (days.has(day)) {
       days.get(day)?.push(item);
@@ -166,9 +179,11 @@ export function getPreviousMonthTransactions(transactions: TransactionType[]) {
 
   const endDate = formatDate(currentYear, currentMonth, 1);
 
-  return transactions.filter(
-    (item) => item.date >= startDate && item.date < endDate,
-  );
+  return transactions.filter((item) => {
+    const date = getDateKey(item.date);
+
+    return date >= startDate && date < endDate;
+  });
 }
 
 export function getMonthlyComparison(transactions: TransactionType[]) {

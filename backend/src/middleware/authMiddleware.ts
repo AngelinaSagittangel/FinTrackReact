@@ -10,21 +10,11 @@ export const authMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
-  const authHeader = req.headers.authorization;
+  const token = req.cookies.token;
 
-  if (!authHeader) {
+  if (!token) {
     res.status(401).json({
       message: "Требуется авторизация",
-    });
-
-    return;
-  }
-
-  const [type, token] = authHeader.split(" ");
-
-  if (type !== "Bearer" || !token) {
-    res.status(401).json({
-      message: "Некорректный формат токена",
     });
 
     return;

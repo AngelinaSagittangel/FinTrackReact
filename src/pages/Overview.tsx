@@ -16,6 +16,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ActionButton from "../components/action-button/ActionButton";
 import useTransactions from "../hooks/useTransactions";
+import useTransfers from "../hooks/useTransfers";
 import useWallets from "../hooks/useWallets";
 import useCategories from "../hooks/useCategories";
 import { useAuth } from "../hooks/useAuth";
@@ -26,6 +27,7 @@ import {
 
 function Overview() {
   const { transactions } = useTransactions();
+  const { transfers } = useTransfers();
   const { wallets } = useWallets();
   const { categories } = useCategories();
   const { currentUser } = useAuth();
@@ -45,7 +47,7 @@ function Overview() {
     today.getMonth() + 1,
   ).padStart(2, "0")}`;
 
-  const data = getAmountForMonth(currentMonth, transactions);
+  const data = getAmountForMonth(currentMonth, transactions, transfers);
 
   const renderConstantDot = (props: {
     cx?: number;
@@ -137,7 +139,7 @@ function Overview() {
           <span className="overview__label">Общий баланс:</span>
 
           <span className="overview__amount">
-            {formatNumber(getTotalBalance(transactions, wallets))}
+            {formatNumber(getTotalBalance(transactions, wallets, transfers))}
           </span>
 
           <span className="overview__change">
@@ -221,7 +223,7 @@ function Overview() {
       </div>
 
       <div className="overview__wallets">
-        {getAmountWallet(transactions, wallets)
+        {getAmountWallet(transactions, wallets, transfers)
           .slice(0, 4)
           .map((wallet) => (
             <WalletCard key={wallet.id} {...wallet} />

@@ -36,6 +36,7 @@ function Analytics() {
           balance: day.balance,
         }))
       : Array.from(monthlyStatistics)
+          .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
           .map(([month, statistics]) => {
             return {
               month,
@@ -43,8 +44,7 @@ function Analytics() {
               expense: statistics.expense,
               balance: statistics.balance,
             };
-          })
-          .reverse();
+          });
 
   const hasEnoughMonths = period === 1 || monthlyData.length >= 3;
 

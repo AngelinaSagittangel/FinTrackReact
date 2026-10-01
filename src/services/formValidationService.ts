@@ -1,5 +1,4 @@
 import type { RegisterErrorsType } from "../types/RegisterErrorsType";
-import type { UserType } from "../types/user";
 
 export function validateName(name: string): string | null {
   const value = name.trim();
@@ -58,36 +57,15 @@ export function validateConfirmPassword(
   return null;
 }
 
-export function validateUniqueEmail(
-  email: string,
-  users: UserType[],
-  currentUserId?: string,
-): string | null {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  const emailExists = users.some(
-    (user) =>
-      user.id !== currentUserId && user.email.toLowerCase() === normalizedEmail,
-  );
-
-  if (emailExists) {
-    return "Пользователь с таким email уже существует";
-  }
-
-  return null;
-}
-
 export function validateRegisterForm(
   name: string,
   email: string,
   password: string,
   confirmPassword: string,
-  users: UserType[],
 ): RegisterErrorsType {
   return {
     name: validateName(name) ?? undefined,
-    email:
-      validateEmail(email) ?? validateUniqueEmail(email, users) ?? undefined,
+    email: validateEmail(email) ?? undefined,
     password: validatePassword(password) ?? undefined,
     confirmPassword:
       validateConfirmPassword(password, confirmPassword) ?? undefined,

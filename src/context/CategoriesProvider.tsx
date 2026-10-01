@@ -1,47 +1,82 @@
-import { useState, type ReactNode } from "react";
-
+import { useEffect, useState, type ReactNode } from "react";
 import { CategoriesContext } from "./CategoriesContext";
 import type { CategoryType } from "../types/CategoryType";
 import { useAuth } from "../hooks/useAuth";
-
+import {
+  createCategoryApi,
+  deleteCategoryApi,
+  getCategoriesApi,
+  updateCategoryApi,
+} from "../services/categoryService";
 function CategoriesProvider({ children }: { children: ReactNode }) {
-  const { currentUser } = useAuth();
-
-  const [allCategories, setAllCategories] = useState<CategoryType[]>(() => {
-    const savedCategories = localStorage.getItem("categories");
-
-    return savedCategories
-      ? (JSON.parse(savedCategories) as CategoryType[])
-      : [];
-  });
-
-  const categories = currentUser
-    ? allCategories.filter((category) => category.userId === currentUser.id)
-    : [];
-
-  const setCategories = (userCategories: CategoryType[], userId?: string) => {
-    const targetUserId = userId ?? currentUser?.id;
-
-    if (!targetUserId) {
+  const { isAuthenticated } = useAuth();
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  useEffect(() => {
+    if (!isAuthenticated) {
       return;
     }
-
-    const otherUsersCategories = allCategories.filter(
-      (category) => category.userId !== targetUserId,
+    getCategoriesApi()
+      .then((categoriesFromApi) => {
+        const formattedCategories = categoriesFromApi.map((category) => ({
+          id: category.id,
+          name: category.name,
+          color: category.color,
+          type: category.type,
+          userId: category.userId,
+        }));
+        setCategories(formattedCategories);
+      })
+      .catch((error) => {
+        console.error("Не удалось загрузить категории:", error);
+      });
+  }, [isAuthenticated]);
+  async function addCategory(category: CategoryType) {
+    const createdCategory = await createCategoryApi(
+      category.name,
+      category.color,
+      category.type,
     );
-
-    const updatedCategories = [...otherUsersCategories, ...userCategories];
-
-    setAllCategories(updatedCategories);
-
-    localStorage.setItem("categories", JSON.stringify(updatedCategories));
-  };
-
+    const formattedCategory = {
+      id: createdCategory.id,
+      name: createdCategory.name,
+      color: createdCategory.color,
+      type: createdCategory.type,
+      userId: createdCategory.userId,
+    };
+    setCategories((prevCategories) => [...prevCategories, formattedCategory]);
+    return formattedCategory;
+  }
+  async function editCategory(category: CategoryType) {
+    const updatedCategory = await updateCategoryApi(category.id, category.name);
+    const formattedCategory = {
+      id: updatedCategory.id,
+      name: updatedCategory.name,
+      color: updatedCategory.color,
+      type: updatedCategory.type,
+      userId: updatedCategory.userId,
+    };
+    setCategories((prevCategories) =>
+      prevCategories.map((currentCategory) =>
+        currentCategory.id === category.id
+          ? formattedCategory
+          : currentCategory,
+      ),
+    );
+    return formattedCategory;
+  }
+  async function removeCategory(id: string) {
+    await deleteCategoryApi(id);
+    setCategories((prevCategories) =>
+      prevCategories.filter((category) => category.id !== id),
+    );
+  }
   return (
-    <CategoriesContext.Provider value={{ categories, setCategories }}>
-      {children}
+    <CategoriesContext.Provider
+      value={{ categories, addCategory, editCategory, removeCategory }}
+    >
+      {" "}
+      {children}{" "}
     </CategoriesContext.Provider>
   );
 }
-
 export default CategoriesProvider;

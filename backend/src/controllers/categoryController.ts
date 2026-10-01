@@ -7,11 +7,19 @@ import { AuthRequest } from "../middleware/authMiddleware";
 export const createCategory = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
 
-  const { name, type } = req.body;
+  const { name, color, type } = req.body;
 
   if (typeof name !== "string" || name.trim().length === 0) {
     res.status(400).json({
       message: "Некорректное название категории",
+    });
+
+    return;
+  }
+
+  if (typeof color !== "string" || color.trim().length === 0) {
+    res.status(400).json({
+      message: "Некорректный цвет категории",
     });
 
     return;
@@ -29,13 +37,15 @@ export const createCategory = async (req: Request, res: Response) => {
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
+        color: color.trim(),
         type,
         userId: authReq.userId!,
       },
     });
 
     res.status(201).json(category);
-  } catch {
+  } catch (error) {
+    console.error("Ошибка при создании категории:", error);
     res.status(500).json({
       message: "Внутренняя ошибка сервера",
     });

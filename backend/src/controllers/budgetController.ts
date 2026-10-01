@@ -3,6 +3,46 @@ import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middleware/authMiddleware";
 
+async function getBudgetWithStats<
+  T extends {
+    amount: Prisma.Decimal;
+    month: number;
+    year: number;
+    categoryId: string;
+  },
+>(budget: T) {
+  const startDate = new Date(Date.UTC(budget.year, budget.month - 1, 1));
+
+  const endDate = new Date(Date.UTC(budget.year, budget.month, 1));
+
+  const result = await prisma.transaction.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      categoryId: budget.categoryId,
+      type: "expense",
+      date: {
+        gte: startDate,
+        lt: endDate,
+      },
+    },
+  });
+
+  const spent = result._sum.amount ?? new Prisma.Decimal(0);
+  const remaining = budget.amount.minus(spent);
+
+  const percent =
+    budget.amount.toNumber() === 0 ? 0 : spent.div(budget.amount).mul(100);
+
+  return {
+    ...budget,
+    spent,
+    remaining,
+    percent,
+  };
+}
+
 export const createBudget = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
 
@@ -61,6 +101,14 @@ export const createBudget = async (req: Request, res: Response) => {
       return;
     }
 
+    if (category.type !== "expense") {
+      res.status(400).json({
+        message: "Бюджет можно создать только для категории расходов",
+      });
+
+      return;
+    }
+
     const existingBudget = await prisma.budget.findFirst({
       where: {
         userId: authReq.userId!,
@@ -91,7 +139,9 @@ export const createBudget = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json(budget);
+    const budgetWithStats = await getBudgetWithStats(budget);
+
+    res.status(201).json(budgetWithStats);
   } catch {
     res.status(500).json({
       message: "Внутренняя ошибка сервера",
@@ -121,40 +171,7 @@ export const getBudgets = async (req: Request, res: Response) => {
     });
 
     const budgetsWithStats = await Promise.all(
-      budgets.map(async (budget) => {
-        const startDate = new Date(Date.UTC(budget.year, budget.month - 1, 1));
-
-        const endDate = new Date(Date.UTC(budget.year, budget.month, 1));
-
-        const result = await prisma.transaction.aggregate({
-          _sum: {
-            amount: true,
-          },
-          where: {
-            categoryId: budget.categoryId,
-            type: "expense",
-            date: {
-              gte: startDate,
-              lt: endDate,
-            },
-          },
-        });
-
-        const spent = result._sum.amount ?? new Prisma.Decimal(0);
-        const remaining = budget.amount.minus(spent);
-
-        const percent =
-          budget.amount.toNumber() === 0
-            ? 0
-            : spent.div(budget.amount).mul(100);
-
-        return {
-          ...budget,
-          spent,
-          remaining,
-          percent,
-        };
-      }),
+      budgets.map((budget) => getBudgetWithStats(budget)),
     );
 
     res.json(budgetsWithStats);
@@ -290,7 +307,9 @@ export const updateBudget = async (req: Request, res: Response) => {
       },
     });
 
-    res.json(updatedBudget);
+    const budgetWithStats = await getBudgetWithStats(updatedBudget);
+
+    res.json(budgetWithStats);
   } catch {
     res.status(500).json({
       message: "Внутренняя ошибка сервера",

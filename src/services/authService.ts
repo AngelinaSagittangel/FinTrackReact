@@ -1,48 +1,66 @@
+import type { LoginResponseType } from "../types/LoginResponseType";
 import type { UserType } from "../types/user";
+import type { UserResponseType } from "../types/UserResponseType";
+import { apiRequest } from "./api";
 
-const USERS_KEY = "users";
-const CURRENT_USER_KEY = "currentUser";
+export async function registerUserApi(user: UserType) {
+  const response = await apiRequest<UserResponseType>("/users", {
+    method: "POST",
+    body: JSON.stringify({
+      name: user.name,
+      email: user.email,
+      password: user.password,
+    }),
+  });
 
-export function getUsers(): UserType[] {
-  const users = localStorage.getItem(USERS_KEY);
-  if (users) {
-    return JSON.parse(users);
-  } else {
-    return [];
-  }
+  return response;
 }
 
-export function registerUser(user: UserType): void {
-  const users = getUsers();
-  users.push(user);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+export async function loginUserApi(email: string, password: string) {
+  const response = await apiRequest<LoginResponseType>("/login", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
+
+  return response;
 }
 
-export function setCurrentUser(userId: string): void {
-  localStorage.setItem(CURRENT_USER_KEY, userId);
+export async function logoutUserApi() {
+  await apiRequest<void>("/logout", {
+    method: "POST",
+  });
 }
 
-export function getCurrentUser(): UserType | null {
-  const userID = localStorage.getItem(CURRENT_USER_KEY);
-  if (!userID) {
-    return null;
-  } else {
-    const users = getUsers();
-    const currentUser = users.find((item) => item.id === userID);
-    return currentUser ?? null;
-  }
+export async function getCurrentUserApi() {
+  const response = await apiRequest<UserResponseType>("/me");
+
+  return response;
 }
 
-export function logoutUser(): void {
-  localStorage.removeItem(CURRENT_USER_KEY);
+export async function updateUserApi(
+  name: string,
+  email: string,
+  password?: string,
+  currentPassword?: string,
+) {
+  const response = await apiRequest<UserResponseType>("/users/me", {
+    method: "PUT",
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      currentPassword,
+    }),
+  });
+
+  return response;
 }
 
-export function updateUser(updatedUser: UserType) {
-  const users = getUsers();
-
-  const updatedUsers = users.map((user) =>
-    user.id === updatedUser.id ? updatedUser : user,
-  );
-
-  localStorage.setItem(USERS_KEY, JSON.stringify(updatedUsers));
+export async function deleteUserApi() {
+  await apiRequest<void>("/users/me", {
+    method: "DELETE",
+  });
 }

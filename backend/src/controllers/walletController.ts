@@ -7,13 +7,19 @@ import { AuthRequest } from "../middleware/authMiddleware";
 export const createWallet = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
 
-  const { name, initialBalance } = req.body;
+  const { name, type, initialBalance } = req.body;
 
   if (typeof name !== "string" || name.trim().length === 0) {
-    res.status(400).json({
-      message: "Некорректное название кошелька",
-    });
+    res.status(400).json({ message: "Некорректное название кошелька" });
+    return;
+  }
 
+  const validWalletTypes = ["cash", "card", "savings", "investment"];
+
+  if (!validWalletTypes.includes(type)) {
+    res.status(400).json({
+      message: "Некорректный тип кошелька",
+    });
     return;
   }
 
@@ -22,10 +28,7 @@ export const createWallet = async (req: Request, res: Response) => {
     !Number.isFinite(initialBalance) ||
     initialBalance < 0
   ) {
-    res.status(400).json({
-      message: "Некорректный начальный баланс",
-    });
-
+    res.status(400).json({ message: "Некорректный начальный баланс" });
     return;
   }
 
@@ -33,13 +36,15 @@ export const createWallet = async (req: Request, res: Response) => {
     const wallet = await prisma.wallet.create({
       data: {
         name: name.trim(),
+        type,
         initialBalance,
         userId: authReq.userId!,
       },
     });
 
     res.status(201).json(wallet);
-  } catch {
+  } catch (error) {
+    console.error("Ошибка при создании кошелька:", error);
     res.status(500).json({
       message: "Внутренняя ошибка сервера",
     });
@@ -71,7 +76,7 @@ export const updateWallet = async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
 
   const { id: walletId } = req.params;
-  const { name, initialBalance } = req.body;
+  const { name, type, initialBalance } = req.body;
 
   if (typeof walletId !== "string") {
     res.status(400).json({
@@ -84,6 +89,16 @@ export const updateWallet = async (req: Request, res: Response) => {
   if (typeof name !== "string" || name.trim().length === 0) {
     res.status(400).json({
       message: "Некорректное название кошелька",
+    });
+
+    return;
+  }
+
+  const validWalletTypes = ["cash", "card", "savings", "investment"];
+
+  if (!validWalletTypes.includes(type)) {
+    res.status(400).json({
+      message: "Некорректный тип кошелька",
     });
 
     return;
@@ -129,6 +144,7 @@ export const updateWallet = async (req: Request, res: Response) => {
       },
       data: {
         name: name.trim(),
+        type,
         initialBalance:
           transactionCount > 0 ? wallet.initialBalance : initialBalance,
       },

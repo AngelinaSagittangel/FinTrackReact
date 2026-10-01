@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { getUsers } from "../services/authService";
 import {
   validateEmail,
   validatePassword,
@@ -19,7 +18,7 @@ function Login() {
 
   const [errors, setErrors] = useState<AuthFormErrorsType>({});
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const emailError = validateEmail(email);
@@ -35,30 +34,17 @@ function Login() {
       return;
     }
 
-    const users = getUsers();
+    try {
+      setErrors({});
 
-    const user = users.find(
-      (item) => item.email.toLowerCase() === email.trim().toLowerCase(),
-    );
-
-    if (!user) {
+      await login(email, password);
+      navigate("/");
+    } catch (error) {
       setErrors({
-        email: "Пользователь с таким email не найден",
+        email:
+          error instanceof Error ? error.message : "Не удалось войти в аккаунт",
       });
-      return;
     }
-
-    if (user.password !== password) {
-      setErrors({
-        password: "Неверный пароль",
-      });
-      return;
-    }
-
-    setErrors({});
-
-    login(user.id);
-    navigate("/");
   }
 
   function handleEmailChange(value: string) {

@@ -5,157 +5,137 @@ import {
   validateEmail,
   validateName,
   validatePassword,
-  validateUniqueEmail,
 } from "../services/formValidationService";
-import { getUsers } from "../services/authService";
 import "./Profile.scss";
-
 function Profile() {
-  const { currentUser, updateUser } = useAuth();
-
+  const { currentUser, updateUser, deleteAccount } = useAuth();
   const [editingName, setEditingName] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
-
   const [name, setName] = useState(currentUser?.name ?? "");
   const [email, setEmail] = useState(currentUser?.email ?? "");
-
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [newPasswordError, setNewPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-
-  function handleNameSave() {
+  const [deleteError, setDeleteError] = useState("");
+  async function handleNameSave() {
     if (!currentUser) {
       return;
     }
-
     const error = validateName(name);
-
     setNameError(error ?? "");
-
     if (error) {
       return;
     }
-
-    updateUser({
-      ...currentUser,
-      name: name.trim(),
-    });
-
-    setNameError("");
-    setEditingName(false);
+    try {
+      await updateUser({ ...currentUser, name: name.trim(), password: "" });
+      setNameError("");
+      setEditingName(false);
+    } catch (error) {
+      setNameError(
+        error instanceof Error ? error.message : "Не удалось изменить имя",
+      );
+    }
   }
-
-  function handleEmailSave() {
+  async function handleEmailSave() {
     if (!currentUser) {
       return;
     }
-
-    const emailValidationError = validateEmail(email);
-
-    if (emailValidationError) {
-      setEmailError(emailValidationError);
+    const error = validateEmail(email);
+    if (error) {
+      setEmailError(error);
       return;
     }
-
-    const uniqueEmailError = validateUniqueEmail(
-      email,
-      getUsers(),
-      currentUser.id,
-    );
-
-    if (uniqueEmailError) {
-      setEmailError(uniqueEmailError);
-      return;
+    try {
+      await updateUser({ ...currentUser, email: email.trim(), password: "" });
+      setEmailError("");
+      setEditingEmail(false);
+    } catch (error) {
+      setEmailError(
+        error instanceof Error ? error.message : "Не удалось изменить email",
+      );
     }
-
-    updateUser({
-      ...currentUser,
-      email: email.trim(),
-    });
-
-    setEmailError("");
-    setEditingEmail(false);
   }
-
-  function handlePasswordSave() {
+  async function handlePasswordSave() {
     if (!currentUser) {
       return;
     }
-
-    const currentPasswordIsCorrect = currentPassword === currentUser.password;
-
-    if (!currentPasswordIsCorrect) {
-      setCurrentPasswordError("Неверный текущий пароль");
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setNewPasswordError(passwordError);
       return;
     }
-
-    const newPasswordError = validatePassword(newPassword);
-
-    if (newPasswordError) {
-      setNewPasswordError(newPasswordError);
+    const confirmError = validateConfirmPassword(newPassword, confirmPassword);
+    if (confirmError) {
+      setConfirmPasswordError(confirmError);
       return;
     }
-
-    const confirmPasswordError = validateConfirmPassword(
-      newPassword,
-      confirmPassword,
-    );
-
-    if (confirmPasswordError) {
-      setConfirmPasswordError(confirmPasswordError);
-      return;
+    try {
+      await updateUser(
+        { ...currentUser, password: newPassword },
+        currentPassword,
+      );
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setCurrentPasswordError("");
+      setNewPasswordError("");
+      setConfirmPasswordError("");
+      setEditingPassword(false);
+    } catch (error) {
+      setCurrentPasswordError(
+        error instanceof Error ? error.message : "Не удалось изменить пароль",
+      );
     }
-
-    updateUser({
-      ...currentUser,
-      password: newPassword,
-    });
-
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-
-    setCurrentPasswordError("");
-    setNewPasswordError("");
-    setConfirmPasswordError("");
-
-    setEditingPassword(false);
   }
-
   function handlePasswordCancel() {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
-
     setCurrentPasswordError("");
     setNewPasswordError("");
     setConfirmPasswordError("");
-
     setEditingPassword(false);
   }
-
+  async function handleDeleteAccount() {
+    const confirmed = window.confirm(
+      "Вы уверены, что хотите удалить аккаунт? Все данные аккаунта будут удалены без возможности восстановления.",
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      setDeleteError("");
+      await deleteAccount();
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Не удалось удалить аккаунт",
+      );
+    }
+  }
   return (
     <section className="profile">
+      {" "}
       <header className="profile__header">
-        <h2>Профиль</h2>
-      </header>
-
+        {" "}
+        <h2>Профиль</h2>{" "}
+      </header>{" "}
       <div className="profile__card">
-        <h3>Личные данные</h3>
-
+        {" "}
+        <h3>Личные данные</h3>{" "}
         <div className="profile__field">
-          <span>Имя</span>
-
+          {" "}
+          <span>Имя</span>{" "}
           {editingName ? (
             <div className="profile__edit">
+              {" "}
               <div>
+                {" "}
                 <input
                   type="text"
                   value={name}
@@ -163,17 +143,15 @@ function Profile() {
                     setName(event.target.value);
                     setNameError("");
                   }}
-                />
-
+                />{" "}
                 {nameError && (
                   <span className="profile__error">{nameError}</span>
-                )}
-              </div>
-
+                )}{" "}
+              </div>{" "}
               <button type="button" onClick={handleNameSave}>
-                Сохранить
-              </button>
-
+                {" "}
+                Сохранить{" "}
+              </button>{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -182,13 +160,14 @@ function Profile() {
                   setEditingName(false);
                 }}
               >
-                Отмена
-              </button>
+                {" "}
+                Отмена{" "}
+              </button>{" "}
             </div>
           ) : (
             <>
-              <strong>{currentUser?.name}</strong>
-
+              {" "}
+              <strong>{currentUser?.name}</strong>{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -197,18 +176,20 @@ function Profile() {
                   setEditingName(true);
                 }}
               >
-                Изменить
-              </button>
+                {" "}
+                Изменить{" "}
+              </button>{" "}
             </>
-          )}
-        </div>
-
+          )}{" "}
+        </div>{" "}
         <div className="profile__field">
-          <span>Email</span>
-
+          {" "}
+          <span>Email</span>{" "}
           {editingEmail ? (
             <div className="profile__edit">
+              {" "}
               <div>
+                {" "}
                 <input
                   type="email"
                   value={email}
@@ -216,17 +197,15 @@ function Profile() {
                     setEmail(event.target.value);
                     setEmailError("");
                   }}
-                />
-
+                />{" "}
                 {emailError && (
                   <span className="profile__error">{emailError}</span>
-                )}
-              </div>
-
+                )}{" "}
+              </div>{" "}
               <button type="button" onClick={handleEmailSave}>
-                Сохранить
-              </button>
-
+                {" "}
+                Сохранить{" "}
+              </button>{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -235,13 +214,14 @@ function Profile() {
                   setEditingEmail(false);
                 }}
               >
-                Отмена
-              </button>
+                {" "}
+                Отмена{" "}
+              </button>{" "}
             </div>
           ) : (
             <>
-              <strong>{currentUser?.email}</strong>
-
+              {" "}
+              <strong>{currentUser?.email}</strong>{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -250,19 +230,21 @@ function Profile() {
                   setEditingEmail(true);
                 }}
               >
-                Изменить
-              </button>
+                {" "}
+                Изменить{" "}
+              </button>{" "}
             </>
-          )}
-        </div>
-      </div>
-
+          )}{" "}
+        </div>{" "}
+      </div>{" "}
       <div className="profile__card">
-        <h3>Безопасность</h3>
-
+        {" "}
+        <h3>Безопасность</h3>{" "}
         {editingPassword ? (
           <div className="profile__password">
+            {" "}
             <div>
+              {" "}
               <input
                 type="password"
                 placeholder="Текущий пароль"
@@ -271,14 +253,13 @@ function Profile() {
                   setCurrentPassword(event.target.value);
                   setCurrentPasswordError("");
                 }}
-              />
-
+              />{" "}
               {currentPasswordError && (
                 <span className="profile__error">{currentPasswordError}</span>
-              )}
-            </div>
-
+              )}{" "}
+            </div>{" "}
             <div>
+              {" "}
               <input
                 type="password"
                 placeholder="Новый пароль"
@@ -287,14 +268,13 @@ function Profile() {
                   setNewPassword(event.target.value);
                   setNewPasswordError("");
                 }}
-              />
-
+              />{" "}
               {newPasswordError && (
                 <span className="profile__error">{newPasswordError}</span>
-              )}
-            </div>
-
+              )}{" "}
+            </div>{" "}
             <div>
+              {" "}
               <input
                 type="password"
                 placeholder="Повторите новый пароль"
@@ -303,29 +283,27 @@ function Profile() {
                   setConfirmPassword(event.target.value);
                   setConfirmPasswordError("");
                 }}
-              />
-
+              />{" "}
               {confirmPasswordError && (
                 <span className="profile__error">{confirmPasswordError}</span>
-              )}
-            </div>
-
+              )}{" "}
+            </div>{" "}
             <div className="profile__password-actions">
+              {" "}
               <button type="button" onClick={handlePasswordSave}>
-                Сохранить
-              </button>
-
+                {" "}
+                Сохранить{" "}
+              </button>{" "}
               <button type="button" onClick={handlePasswordCancel}>
-                Отмена
-              </button>
-            </div>
+                {" "}
+                Отмена{" "}
+              </button>{" "}
+            </div>{" "}
           </div>
         ) : (
           <div className="profile__field">
-            <span>Пароль</span>
-
-            <strong>••••••••</strong>
-
+            {" "}
+            <span>Пароль</span> <strong>••••••••</strong>{" "}
             <button
               type="button"
               onClick={() => {
@@ -335,13 +313,33 @@ function Profile() {
                 setEditingPassword(true);
               }}
             >
-              Изменить
-            </button>
+              {" "}
+              Изменить{" "}
+            </button>{" "}
           </div>
-        )}
-      </div>
+        )}{" "}
+      </div>{" "}
+      <div className="profile__card profile__card--danger">
+        {" "}
+        <h3>Удаление аккаунта</h3>{" "}
+        <p className="profile__danger-text">
+          {" "}
+          Удаление аккаунта необратимо. Все ваши кошельки, категории, операции и
+          бюджеты будут удалены.{" "}
+        </p>{" "}
+        <button
+          className="profile__delete-button"
+          type="button"
+          onClick={handleDeleteAccount}
+        >
+          {" "}
+          Удалить аккаунт{" "}
+        </button>{" "}
+        {deleteError && (
+          <span className="profile__error">{deleteError}</span>
+        )}{" "}
+      </div>{" "}
     </section>
   );
 }
-
 export default Profile;

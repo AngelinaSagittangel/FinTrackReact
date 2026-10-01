@@ -1,46 +1,78 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { UserType } from "../types/user";
 import {
-  getCurrentUser,
-  logoutUser,
-  registerUser,
-  setCurrentUser,
-  updateUser as updateUserStorage,
+  getCurrentUserApi,
+  loginUserApi,
+  logoutUserApi,
+  registerUserApi,
+  updateUserApi,
+  deleteUserApi,
 } from "../services/authService";
+import type { UserResponseType } from "../types/UserResponseType";
 
 type AuthProviderProps = {
   children: ReactNode;
 };
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [currentUser, setCurrentUserState] = useState<UserType | null>(
-    getCurrentUser(),
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [currentUser, setCurrentUserState] = useState<UserResponseType | null>(
+    null,
   );
 
   const isAuthenticated = currentUser !== null;
 
-  function login(userId: string) {
-    setCurrentUser(userId);
+  useEffect(() => {
+    getCurrentUserApi()
+      .then((user) => {
+        setCurrentUserState(user);
+      })
+      .catch(() => {
+        setCurrentUserState(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
-    const user = getCurrentUser();
+  async function login(email: string, password: string) {
+    const response = await loginUserApi(email, password);
 
-    setCurrentUserState(user);
+    setCurrentUserState(response.user);
   }
 
-  function register(user: UserType) {
-    registerUser(user);
-    setCurrentUser(user.id);
-    setCurrentUserState(user);
+  async function register(user: UserType) {
+    await registerUserApi(user);
+
+    const response = await loginUserApi(user.email, user.password);
+
+    setCurrentUserState(response.user);
+
+    return response.user;
   }
 
-  function updateUser(user: UserType) {
-    updateUserStorage(user);
-    setCurrentUserState(user);
+  async function updateUser(user: UserType, currentPassword?: string) {
+    const updatedUser = await updateUserApi(
+      user.name,
+      user.email,
+      user.password,
+      currentPassword,
+    );
+
+    setCurrentUserState(updatedUser);
   }
 
-  function logout() {
-    logoutUser();
+  async function logout() {
+    await logoutUserApi();
+
+    setCurrentUserState(null);
+  }
+
+  async function deleteAccount() {
+    await deleteUserApi();
+
     setCurrentUserState(null);
   }
 
@@ -53,6 +85,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         register,
         updateUser,
         logout,
+        isLoading,
+        deleteAccount,
       }}
     >
       {children}

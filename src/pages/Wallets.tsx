@@ -1,58 +1,58 @@
 import "./Wallets.scss";
 import { useState } from "react";
+
 import WalletCard from "../components/wallet-card/WalletCard";
+import WalletForm from "../components/wallet-form/WalletForm";
+
 import { getAmountWallet, getTotalAmountWallets } from "../data/waletts";
 import useTransactions from "../hooks/useTransactions";
+import useTransfers from "../hooks/useTransfers";
 import useWallets from "../hooks/useWallets";
-import WalletForm from "../components/wallet-form/WalletForm";
+
 import { formatNumber } from "../utils/formatMoney";
 
 function Wallets() {
-  const { wallets, setWallets } = useWallets();
+  const { wallets, addWallet, editWallet, removeWallet } = useWallets();
   const { transactions } = useTransactions();
+  const { transfers } = useTransfers();
 
-  const walletsWithAmount = getAmountWallet(transactions, wallets);
+  const walletsWithAmount = getAmountWallet(transactions, wallets, transfers);
 
-  const totalAmount = getTotalAmountWallets(transactions, wallets);
+  const totalAmount = getTotalAmountWallets(transactions, wallets, transfers);
 
   const [isAddingWallet, setIsAddingWallet] = useState(false);
-
   const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
 
   const editingWallet = wallets.find((item) => editingWalletId === item.id);
 
-  function deleteWallet(id: string) {
+  async function deleteWallet(id: string) {
     const walletHasTransactions = transactions.some(
       (transaction) =>
         transaction.walletId === id || transaction.walletIdTo === id,
     );
 
-    if (walletHasTransactions) {
+    const walletHasTransfers = transfers.some(
+      (transfer) => transfer.fromWalletId === id || transfer.toWalletId === id,
+    );
+
+    if (walletHasTransactions || walletHasTransfers) {
       alert("Нельзя удалить кошелёк, пока у него есть операции.");
       return;
     }
 
-    const currentWallets = wallets.filter((item) => item.id !== id);
-
-    setWallets(currentWallets);
+    await removeWallet(id);
   }
 
   return (
     <section className="wallets">
       {isAddingWallet || editingWalletId !== null ? (
         <WalletForm
-          onSubmit={(newWallet) => {
-            setWallets(
-              editingWalletId
-                ? wallets.map((item) => {
-                    if (item.id === newWallet.id) {
-                      return newWallet;
-                    }
-
-                    return item;
-                  })
-                : [...wallets, newWallet],
-            );
+          onSubmit={async (newWallet) => {
+            if (editingWalletId) {
+              await editWallet(newWallet);
+            } else {
+              await addWallet(newWallet);
+            }
 
             setIsAddingWallet(false);
             setEditingWalletId(null);

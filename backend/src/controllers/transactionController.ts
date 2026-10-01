@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middleware/authMiddleware";
 
@@ -9,7 +10,7 @@ export const createTransaction = async (req: Request, res: Response) => {
 
   if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
     res.status(400).json({
-      message: "Некорректная сумма",
+      message: "Некорректная сумма операции",
     });
 
     return;
@@ -17,7 +18,7 @@ export const createTransaction = async (req: Request, res: Response) => {
 
   if (type !== "income" && type !== "expense") {
     res.status(400).json({
-      message: "Некорректный тип транзакции",
+      message: "Некорректный тип операции",
     });
 
     return;
@@ -25,7 +26,7 @@ export const createTransaction = async (req: Request, res: Response) => {
 
   if (typeof date !== "string" || date.trim().length === 0) {
     res.status(400).json({
-      message: "Некорректная дата",
+      message: "Некорректная дата операции",
     });
 
     return;
@@ -67,20 +68,13 @@ export const createTransaction = async (req: Request, res: Response) => {
       where: {
         id: categoryId,
         userId: authReq.userId!,
+        type,
       },
     });
 
     if (!category) {
       res.status(404).json({
         message: "Категория не найдена",
-      });
-
-      return;
-    }
-
-    if (category.type !== type) {
-      res.status(400).json({
-        message: "Тип категории не соответствует типу транзакции",
       });
 
       return;
@@ -98,15 +92,19 @@ export const createTransaction = async (req: Request, res: Response) => {
         walletId,
         categoryId,
       },
+      include: {
+        category: true,
+        wallet: true,
+      },
     });
 
     res.status(201).json(transaction);
-  } catch {
+  } catch (error) {
+    console.error("Ошибка при создании транзакции:", error);
+
     res.status(500).json({
       message: "Внутренняя ошибка сервера",
     });
-
-    return;
   }
 };
 
@@ -121,8 +119,8 @@ export const getTransactions = async (req: Request, res: Response) => {
         },
       },
       include: {
-        wallet: true,
         category: true,
+        wallet: true,
       },
       orderBy: {
         date: "desc",
@@ -130,50 +128,9 @@ export const getTransactions = async (req: Request, res: Response) => {
     });
 
     res.json(transactions);
-  } catch {
-    res.status(500).json({
-      message: "Внутренняя ошибка сервера",
-    });
-  }
-};
+  } catch (error) {
+    console.error("Ошибка при загрузке транзакций:", error);
 
-export const getTransaction = async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
-
-  const { id: transactionId } = req.params;
-
-  if (typeof transactionId !== "string") {
-    res.status(400).json({
-      message: "Некорректный ID транзакции",
-    });
-
-    return;
-  }
-
-  try {
-    const transaction = await prisma.transaction.findFirst({
-      where: {
-        id: transactionId,
-        wallet: {
-          userId: authReq.userId!,
-        },
-      },
-      include: {
-        wallet: true,
-        category: true,
-      },
-    });
-
-    if (!transaction) {
-      res.status(404).json({
-        message: "Транзакция не найдена",
-      });
-
-      return;
-    }
-
-    res.json(transaction);
-  } catch {
     res.status(500).json({
       message: "Внутренняя ошибка сервера",
     });
@@ -197,7 +154,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
   if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
     res.status(400).json({
-      message: "Некорректная сумма",
+      message: "Некорректная сумма операции",
     });
 
     return;
@@ -205,7 +162,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
   if (type !== "income" && type !== "expense") {
     res.status(400).json({
-      message: "Некорректный тип транзакции",
+      message: "Некорректный тип операции",
     });
 
     return;
@@ -213,23 +170,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
   if (typeof date !== "string" || date.trim().length === 0) {
     res.status(400).json({
-      message: "Некорректная дата",
-    });
-
-    return;
-  }
-
-  if (typeof walletId !== "string" || walletId.trim().length === 0) {
-    res.status(400).json({
-      message: "Некорректный ID кошелька",
-    });
-
-    return;
-  }
-
-  if (typeof categoryId !== "string" || categoryId.trim().length === 0) {
-    res.status(400).json({
-      message: "Некорректный ID категории",
+      message: "Некорректная дата операции",
     });
 
     return;
@@ -272,20 +213,13 @@ export const updateTransaction = async (req: Request, res: Response) => {
       where: {
         id: categoryId,
         userId: authReq.userId!,
+        type,
       },
     });
 
     if (!category) {
       res.status(404).json({
         message: "Категория не найдена",
-      });
-
-      return;
-    }
-
-    if (category.type !== type) {
-      res.status(400).json({
-        message: "Тип категории не соответствует типу транзакции",
       });
 
       return;
@@ -307,13 +241,15 @@ export const updateTransaction = async (req: Request, res: Response) => {
         categoryId,
       },
       include: {
-        wallet: true,
         category: true,
+        wallet: true,
       },
     });
 
     res.json(updatedTransaction);
-  } catch {
+  } catch (error) {
+    console.error("Ошибка при обновлении транзакции:", error);
+
     res.status(500).json({
       message: "Внутренняя ошибка сервера",
     });
@@ -358,7 +294,9 @@ export const deleteTransaction = async (req: Request, res: Response) => {
     });
 
     res.status(204).send();
-  } catch {
+  } catch (error) {
+    console.error("Ошибка при удалении транзакции:", error);
+
     res.status(500).json({
       message: "Внутренняя ошибка сервера",
     });

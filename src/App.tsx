@@ -7,6 +7,7 @@ import CategoriesProvider from "./context/CategoriesProvider";
 import BudgetsProvider from "./context/BudgetsProvider";
 import { AuthProvider } from "./context/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
+import TransfersProvider from "./context/TransfersProvider";
 
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
@@ -21,30 +22,32 @@ function App() {
   return (
     <AuthProvider>
       <TransactionsProvider>
-        <WalletsProvider>
-          <CategoriesProvider>
-            <BudgetsProvider>
-              <BrowserRouter basename={import.meta.env.BASE_URL}>
-                <Suspense fallback={<div>Загрузка страницы...</div>}>
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/" element={<Layout />}>
-                        <Route index element={<Overview />} />
-                        <Route path="activity" element={<Activity />} />
-                        <Route path="analytics" element={<Analytics />} />
-                        <Route path="wallets" element={<Wallets />} />
-                        <Route path="budgets" element={<Budgets />} />
-                        <Route path="profile" element={<Profile />} />
+        <TransfersProvider>
+          <WalletsProvider>
+            <CategoriesProvider>
+              <BudgetsProvider>
+                <BrowserRouter basename={import.meta.env.BASE_URL}>
+                  <Suspense fallback={<div>Загрузка страницы...</div>}>
+                    <Routes>
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/" element={<Layout />}>
+                          <Route index element={<Overview />} />
+                          <Route path="activity" element={<Activity />} />
+                          <Route path="analytics" element={<Analytics />} />
+                          <Route path="wallets" element={<Wallets />} />
+                          <Route path="budgets" element={<Budgets />} />
+                          <Route path="profile" element={<Profile />} />
+                        </Route>
                       </Route>
-                    </Route>
-                  </Routes>
-                </Suspense>
-              </BrowserRouter>
-            </BudgetsProvider>
-          </CategoriesProvider>
-        </WalletsProvider>
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
+              </BudgetsProvider>
+            </CategoriesProvider>
+          </WalletsProvider>
+        </TransfersProvider>
       </TransactionsProvider>
     </AuthProvider>
   );

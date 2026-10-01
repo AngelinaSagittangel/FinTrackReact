@@ -1,20 +1,25 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { useAuth } from "../hooks/useAuth";
-import { getUsers } from "../services/authService";
+import useWallets from "../hooks/useWallets";
+import useCategories from "../hooks/useCategories";
+
 import { validateRegisterForm } from "../services/formValidationService";
 
 import AuthForm from "../components/auth-form/AuthForm";
-import "./Register.scss";
-import type { AuthFormErrorsType } from "../types/AuthFormErrorsType";
-import useWallets from "../hooks/useWallets";
-import useCategories from "../hooks/useCategories";
+
 import initialCategories from "../data/categories";
+
+import type { AuthFormErrorsType } from "../types/AuthFormErrorsType";
+
+import "./Register.scss";
 
 function Register() {
   const { register } = useAuth();
-  const { setWallets } = useWallets();
-  const { setCategories } = useCategories();
+  const { addWallet } = useWallets();
+  const { addCategory } = useCategories();
+
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -24,17 +29,14 @@ function Register() {
 
   const [errors, setErrors] = useState<AuthFormErrorsType>({});
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    const users = getUsers();
 
     const validationErrors = validateRegisterForm(
       name,
       email,
       password,
       confirmPassword,
-      users,
     );
 
     setErrors(validationErrors);
@@ -43,47 +45,49 @@ function Register() {
       return;
     }
 
-    const user = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      email: email.trim(),
-      password,
-    };
+    try {
+      setErrors({});
 
-    register(user);
+      const user = await register({
+        id: "",
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
 
-    setWallets(
-      [
-        {
-          id: crypto.randomUUID(),
-          userId: user.id,
-          name: "Карта",
-          type: "card",
-          initialAmount: 0,
-        },
-        {
-          id: crypto.randomUUID(),
-          userId: user.id,
-          name: "Наличные",
-          type: "cash",
-          initialAmount: 0,
-        },
-      ],
-      user.id,
-    );
-
-    setCategories(
-      initialCategories.map((category) => ({
-        id: crypto.randomUUID(),
+      await addWallet({
+        id: "",
         userId: user.id,
-        name: category.name,
-        color: category.color,
-        type: category.type,
-      })),
-      user.id,
-    );
+        name: "Карта",
+        type: "card",
+        initialAmount: 0,
+      });
 
-    navigate("/");
+      await addWallet({
+        id: "",
+        userId: user.id,
+        name: "Наличные",
+        type: "cash",
+        initialAmount: 0,
+      });
+
+      for (const category of initialCategories) {
+        await addCategory({
+          id: "",
+          userId: user.id,
+          name: category.name,
+          color: category.color,
+          type: category.type,
+        });
+      }
+
+      navigate("/");
+    } catch (error) {
+      setErrors({
+        email:
+          error instanceof Error ? error.message : "Не удалось создать аккаунт",
+      });
+    }
   }
 
   function handleNameChange(value: string) {

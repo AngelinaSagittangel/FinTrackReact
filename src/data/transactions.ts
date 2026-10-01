@@ -1,4 +1,5 @@
 import type { TransactionType } from "../types/TransactionType";
+import type { TransferType } from "../types/TransferType";
 import type { WalletType } from "../types/WalletType";
 import { getTotalAmountWallets } from "./waletts";
 
@@ -55,13 +56,15 @@ export function getTotalExpenses(transactions: TransactionType[]) {
 export function getTotalBalance(
   transactions: TransactionType[],
   wallets: WalletType[],
+  transfers: TransferType[] = [],
 ) {
-  return getTotalAmountWallets(transactions, wallets);
+  return getTotalAmountWallets(transactions, wallets, transfers);
 }
 
 export function getAmountForMonth(
   month: string,
   transactions: TransactionType[],
+  transfers: TransferType[] = [],
 ) {
   const collection = new Map();
 
@@ -71,25 +74,37 @@ export function getAmountForMonth(
     item.date.localeCompare(itm.date),
   );
 
+  const sortedTransfers = [...transfers].sort((item, itm) =>
+    item.date.localeCompare(itm.date),
+  );
+
+  const operations = [
+    ...sortedTransactions.map((transaction) => ({
+      date: transaction.date,
+      amount:
+        transaction.type === "expense"
+          ? -transaction.amount
+          : transaction.type === "income"
+            ? transaction.amount
+            : 0,
+    })),
+    ...sortedTransfers.map((transfer) => ({
+      date: transfer.date,
+      amount: 0,
+    })),
+  ].sort((item, itm) => item.date.localeCompare(itm.date));
+
   const startDate = `${month}-01`;
 
-  for (let i = 0; i < sortedTransactions.length; i++) {
-    const transaction = sortedTransactions[i];
+  for (let i = 0; i < operations.length; i++) {
+    const operation = operations[i];
 
-    if (transaction.date < startDate) {
-      if (transaction.type === "expense") {
-        balance -= transaction.amount;
-      } else if (transaction.type === "income") {
-        balance += transaction.amount;
-      }
-    } else if (transaction.date.slice(0, -3) === month) {
-      if (transaction.type === "expense") {
-        balance -= transaction.amount;
-      } else if (transaction.type === "income") {
-        balance += transaction.amount;
-      }
+    if (operation.date < startDate) {
+      balance += operation.amount;
+    } else if (operation.date.slice(0, -3) === month) {
+      balance += operation.amount;
 
-      collection.set(transaction.date, balance);
+      collection.set(operation.date, balance);
     }
   }
 

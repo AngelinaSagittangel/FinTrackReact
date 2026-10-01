@@ -1,183 +1,150 @@
 import { useState, type SyntheticEvent } from "react";
 import type { TransactionFormType } from "../../types/TransactionFormType";
 import type { TransactionType } from "../../types/TransactionType";
+import type { CategoryType } from "../../types/CategoryType";
 import useCategories from "../../hooks/useCategories";
 import useWallets from "../../hooks/useWallets";
 import useTransactions from "../../hooks/useTransactions";
 import "./TransactionForm.scss";
-import { useAuth } from "../../hooks/useAuth";
-
 type Props = TransactionFormType & {
   transaction?: TransactionType;
   onCancel?: () => void;
 };
-
 function TransactionForm({ type, onSubmit, transaction, onCancel }: Props) {
-  const { categories, setCategories } = useCategories();
+  const { categories, addCategory, editCategory, removeCategory } =
+    useCategories();
   const { wallets } = useWallets();
   const { transactions } = useTransactions();
-  const { currentUser } = useAuth();
-
   const [fromWallet, setFromWallet] = useState(
     transaction?.walletId ?? wallets[0]?.id ?? "",
   );
-
   const [toWallet, setToWallet] = useState(
     transaction?.walletIdTo ?? wallets[1]?.id ?? "",
   );
-
   const [amount, setAmount] = useState(
     transaction ? String(transaction.amount) : "",
   );
-
   const [date, setDate] = useState(transaction?.date ?? "");
-
   const [walletId, setWalletId] = useState(
     transaction?.walletId ?? wallets[0]?.id ?? "",
   );
-
   const availableCategories = categories.filter((category) => {
     if (type === "expense") {
       return category.type === "expense";
     }
-
     return category.type === "income";
   });
-
   const [categoryId, setCategoryId] = useState(
     transaction?.categoryId ?? availableCategories[0]?.id ?? "",
   );
-
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
-
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [editedCategory, setEditedCategory] = useState("");
-
   const [categoryError, setCategoryError] = useState("");
-
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     const name = newCategory.trim();
-
-    if (!name || type === "transfer" || !currentUser) {
+    if (!name || type === "transfer") {
       return;
     }
-
     const categoryExists = categories.some(
       (item) =>
         item.name.toLowerCase() === name.toLowerCase() && item.type === type,
     );
-
     if (categoryExists) {
+      setCategoryError("Такая категория уже существует.");
       return;
     }
-
-    const createdCategory = {
-      id: crypto.randomUUID(),
-      userId: currentUser.id,
+    const category: CategoryType = {
+      id: "",
+      userId: "",
       name,
       color: "#C8AD61",
       type,
     };
-
-    setCategories([...categories, createdCategory]);
-    setCategoryId(createdCategory.id);
-    setNewCategory("");
-    setIsAddingCategory(false);
-    setCategoryError("");
+    try {
+      const createdCategory = await addCategory(category);
+      setCategoryId(createdCategory.id);
+      setNewCategory("");
+      setIsAddingCategory(false);
+      setCategoryError("");
+    } catch (error) {
+      console.error("Не удалось создать категорию:", error);
+      setCategoryError("Не удалось создать категорию.");
+    }
   };
-
-  const handleEditCategory = () => {
+  const handleEditCategory = async () => {
     const name = editedCategory.trim();
-
     if (!name || type === "transfer") {
       return;
     }
-
     const categoryExists = categories.some(
       (item) =>
         item.name.toLowerCase() === name.toLowerCase() &&
         item.type === type &&
         item.id !== categoryId,
     );
-
     if (categoryExists) {
+      setCategoryError("Такая категория уже существует.");
       return;
     }
-
-    const updatedCategories = categories.map((item) => {
-      if (item.id === categoryId) {
-        return {
-          ...item,
-          name,
-        };
-      }
-
-      return item;
-    });
-
-    setCategories(updatedCategories);
-    setEditedCategory("");
-    setIsEditingCategory(false);
-    setCategoryError("");
+    const currentCategory = categories.find(
+      (category) => category.id === categoryId,
+    );
+    if (!currentCategory) {
+      return;
+    }
+    try {
+      await editCategory({ ...currentCategory, name });
+      setEditedCategory("");
+      setIsEditingCategory(false);
+      setCategoryError("");
+    } catch (error) {
+      console.error("Не удалось изменить категорию:", error);
+      setCategoryError("Не удалось изменить категорию.");
+    }
   };
-
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     if (!categoryId || type === "transfer") {
       return;
     }
-
     const categoryHasTransactions = transactions.some(
       (item) => item.categoryId === categoryId,
     );
-
     if (categoryHasTransactions) {
       setCategoryError("Нельзя удалить категорию, у которой есть операции.");
       return;
     }
-
-    const updatedCategories = categories.filter(
-      (item) => item.id !== categoryId,
-    );
-
-    setCategories(updatedCategories);
-
-    const nextCategory = availableCategories.find(
-      (item) => item.id !== categoryId,
-    );
-
-    setCategoryId(nextCategory?.id ?? "");
-    setCategoryError("");
+    try {
+      await removeCategory(categoryId);
+      const nextCategory = availableCategories.find(
+        (item) => item.id !== categoryId,
+      );
+      setCategoryId(nextCategory?.id ?? "");
+      setCategoryError("");
+    } catch (error) {
+      console.error("Не удалось удалить категорию:", error);
+      setCategoryError("Не удалось удалить категорию.");
+    }
   };
-
   const handleSubmit = (event: SyntheticEvent) => {
     event.preventDefault();
-
     const numericAmount = Number(amount);
-
     if (numericAmount <= 0 || !date) {
       return;
     }
-
     if (type === "transfer") {
       if (wallets.length < 2) {
         return;
       }
-
       if (!fromWallet || !toWallet || fromWallet === toWallet) {
         return;
       }
     }
-
     const categoryData = categories.find((item) => item.id === categoryId);
-
-    if (!currentUser) {
-      return;
-    }
-
     const updatedTransaction: TransactionType = {
       id: transaction?.id ?? crypto.randomUUID(),
-      userId: currentUser.id,
+      userId: "",
       type,
       categoryId: type === "transfer" ? "" : categoryId,
       date,
@@ -186,18 +153,15 @@ function TransactionForm({ type, onSubmit, transaction, onCancel }: Props) {
       color:
         type === "transfer" ? "#7189C7" : (categoryData?.color ?? "#7189C7"),
     };
-
     if (type === "transfer") {
       updatedTransaction.walletIdTo = toWallet;
     }
-
     onSubmit(updatedTransaction);
   };
-
   const canCreateTransfer = wallets.length >= 2;
-
   return (
     <form className="transaction-form" onSubmit={handleSubmit}>
+      {" "}
       <input
         type="number"
         placeholder="Сумма"
@@ -206,29 +170,30 @@ function TransactionForm({ type, onSubmit, transaction, onCancel }: Props) {
         value={amount}
         onChange={(event) => setAmount(event.target.value)}
         required
-      />
-
+      />{" "}
       <input
         type="date"
         value={date}
         onChange={(event) => setDate(event.target.value)}
         required
-      />
-
+      />{" "}
       {type === "income" || type === "expense" ? (
         <div className="transaction-form__selects">
+          {" "}
           <select
             value={walletId}
             onChange={(event) => setWalletId(event.target.value)}
           >
+            {" "}
             {wallets.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name}
+                {" "}
+                {item.name}{" "}
               </option>
-            ))}
-          </select>
-
+            ))}{" "}
+          </select>{" "}
           <div className="transaction-form__category">
+            {" "}
             <select
               value={categoryId}
               onChange={(event) => {
@@ -236,33 +201,33 @@ function TransactionForm({ type, onSubmit, transaction, onCancel }: Props) {
                 setCategoryError("");
               }}
             >
+              {" "}
               {availableCategories.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name}
+                  {" "}
+                  {item.name}{" "}
                 </option>
-              ))}
-            </select>
-
+              ))}{" "}
+            </select>{" "}
             <button
               type="button"
               onClick={() => {
                 const currentCategory = categories.find(
                   (item) => item.id === categoryId,
                 );
-
                 setIsEditingCategory(true);
                 setEditedCategory(currentCategory?.name ?? "");
                 setIsAddingCategory(false);
                 setCategoryError("");
               }}
             >
-              Изменить
-            </button>
-
+              {" "}
+              Изменить{" "}
+            </button>{" "}
             <button type="button" onClick={handleDeleteCategory}>
-              Удалить
-            </button>
-
+              {" "}
+              Удалить{" "}
+            </button>{" "}
             <button
               type="button"
               onClick={() => {
@@ -271,27 +236,26 @@ function TransactionForm({ type, onSubmit, transaction, onCancel }: Props) {
                 setCategoryError("");
               }}
             >
-              + Новая
-            </button>
-          </div>
-
+              {" "}
+              + Новая{" "}
+            </button>{" "}
+          </div>{" "}
           {categoryError && (
             <span className="transaction-form__error">{categoryError}</span>
-          )}
-
+          )}{" "}
           {isAddingCategory && (
             <div className="transaction-form__new-category">
+              {" "}
               <input
                 type="text"
                 placeholder="Название категории"
                 value={newCategory}
                 onChange={(event) => setNewCategory(event.target.value)}
-              />
-
+              />{" "}
               <button type="button" onClick={handleAddCategory}>
-                Добавить
-              </button>
-
+                {" "}
+                Добавить{" "}
+              </button>{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -299,24 +263,24 @@ function TransactionForm({ type, onSubmit, transaction, onCancel }: Props) {
                   setNewCategory("");
                 }}
               >
-                Отмена
-              </button>
+                {" "}
+                Отмена{" "}
+              </button>{" "}
             </div>
-          )}
-
+          )}{" "}
           {isEditingCategory && (
             <div className="transaction-form__new-category">
+              {" "}
               <input
                 type="text"
                 placeholder="Название категории"
                 value={editedCategory}
                 onChange={(event) => setEditedCategory(event.target.value)}
-              />
-
+              />{" "}
               <button type="button" onClick={handleEditCategory}>
-                Сохранить
-              </button>
-
+                {" "}
+                Сохранить{" "}
+              </button>{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -324,78 +288,81 @@ function TransactionForm({ type, onSubmit, transaction, onCancel }: Props) {
                   setEditedCategory("");
                 }}
               >
-                Отмена
-              </button>
+                {" "}
+                Отмена{" "}
+              </button>{" "}
             </div>
-          )}
+          )}{" "}
         </div>
       ) : type === "transfer" ? (
         <>
+          {" "}
           {canCreateTransfer ? (
             <div className="transaction-form__selects">
+              {" "}
               <select
                 value={fromWallet}
                 disabled={Boolean(transaction)}
                 onChange={(event) => {
                   const newFromWallet = event.target.value;
-
                   setFromWallet(newFromWallet);
-
                   if (newFromWallet === toWallet) {
                     const nextWallet = wallets.find(
                       (wallet) => wallet.id !== newFromWallet,
                     );
-
                     setToWallet(nextWallet?.id ?? "");
                   }
                 }}
               >
+                {" "}
                 {wallets.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.name}
+                    {" "}
+                    {item.name}{" "}
                   </option>
-                ))}
-              </select>
-
+                ))}{" "}
+              </select>{" "}
               <select
                 value={toWallet}
                 disabled={Boolean(transaction)}
                 onChange={(event) => setToWallet(event.target.value)}
               >
+                {" "}
                 {wallets
                   .filter((wallet) => wallet.id !== fromWallet)
                   .map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.name}
+                      {" "}
+                      {item.name}{" "}
                     </option>
-                  ))}
-              </select>
+                  ))}{" "}
+              </select>{" "}
             </div>
           ) : (
             <span className="transaction-form__error">
-              Для перевода необходимо минимум два кошелька.
+              {" "}
+              Для перевода необходимо минимум два кошелька.{" "}
             </span>
-          )}
+          )}{" "}
         </>
-      ) : null}
-
+      ) : null}{" "}
       {type !== "transfer" || canCreateTransfer ? (
         <button className="transaction-form__button" type="submit">
-          {transaction ? "Сохранить" : "Создать"}
+          {" "}
+          {transaction ? "Сохранить" : "Создать"}{" "}
         </button>
-      ) : null}
-
+      ) : null}{" "}
       {transaction && onCancel && (
         <button
           className="transaction-form__cancel"
           type="button"
           onClick={onCancel}
         >
-          Отмена
+          {" "}
+          Отмена{" "}
         </button>
-      )}
+      )}{" "}
     </form>
   );
 }
-
 export default TransactionForm;

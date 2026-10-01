@@ -202,4 +202,29 @@
     line-height: 1.3;
     color: $error;
   }
+
+  &__card--danger {
+    border-color: $accent-light;
+  }
+  &__danger-text {
+    max-width: 560px;
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: $text-secondary;
+  }
+  &__delete-button {
+    padding: 10px 16px;
+    border: 1px solid $error;
+    border-radius: 8px;
+    background: $surface;
+    color: $error;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    &:hover {
+      background: $error;
+      color: $surface;
+    }
+  }
 }

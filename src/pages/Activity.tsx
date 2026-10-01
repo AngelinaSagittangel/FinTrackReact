@@ -4,10 +4,12 @@ import ActionButton from "../components/action-button/ActionButton";
 import TransactionForm from "../components/transaction-form/TransactionForm";
 import "./Activity.scss";
 import useTransactions from "../hooks/useTransactions";
+import useTransfers from "../hooks/useTransfers";
 import useCategories from "../hooks/useCategories";
 import { formatNumber } from "../utils/formatMoney";
 import type { TransactionType } from "../types/TransactionType";
 import { useAuth } from "../hooks/useAuth";
+import { formatDate } from "../utils/formatDate";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,7 +22,12 @@ function Activity() {
   const type = location.state?.type;
   const [operationType, setOperationType] = useState(type);
 
-  const { transactions, setTransactions } = useTransactions();
+  const { transactions, addTransaction, editTransaction, removeTransaction } =
+    useTransactions();
+
+  const { transfers, addTransfer, editTransfer, removeTransfer } =
+    useTransfers();
+
   const { categories } = useCategories();
 
   const [editingTransaction, setEditingTransaction] =
@@ -28,7 +35,22 @@ function Activity() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const sortedTransactions = [...transactions].sort((a, b) =>
+  const activityTransactions: TransactionType[] = [
+    ...transactions,
+    ...transfers.map((transfer) => ({
+      id: transfer.id,
+      userId: transfer.userId,
+      walletId: transfer.fromWalletId,
+      walletIdTo: transfer.toWalletId,
+      categoryId: "",
+      amount: transfer.amount,
+      type: "transfer" as const,
+      date: transfer.date,
+      color: "#7189C7",
+    })),
+  ];
+
+  const sortedTransactions = [...activityTransactions].sort((a, b) =>
     b.date.localeCompare(a.date),
   );
 
@@ -41,15 +63,17 @@ function Activity() {
     startIndex + ITEMS_PER_PAGE,
   );
 
-  const handleDeleteTransaction = (id: string) => {
-    const updatedTransactions = transactions.filter(
-      (transaction) => transaction.id !== id,
-    );
+  const handleDeleteTransaction = async (id: string) => {
+    const transfer = transfers.find((item) => item.id === id);
 
-    setTransactions(updatedTransactions);
+    if (transfer) {
+      await removeTransfer(id);
+    } else {
+      await removeTransaction(id);
+    }
 
     const updatedTotalPages = Math.ceil(
-      updatedTransactions.length / ITEMS_PER_PAGE,
+      (activityTransactions.length - 1) / ITEMS_PER_PAGE,
     );
 
     if (updatedTotalPages === 0) {
@@ -64,14 +88,21 @@ function Activity() {
     setOperationType(transaction.type);
   };
 
-  const handleUpdateTransaction = (updatedTransaction: TransactionType) => {
-    setTransactions(
-      transactions.map((transaction) =>
-        transaction.id === updatedTransaction.id
-          ? updatedTransaction
-          : transaction,
-      ),
-    );
+  const handleUpdateTransaction = async (
+    updatedTransaction: TransactionType,
+  ) => {
+    if (updatedTransaction.type === "transfer") {
+      await editTransfer({
+        id: updatedTransaction.id,
+        userId: updatedTransaction.userId,
+        fromWalletId: updatedTransaction.walletId,
+        toWalletId: updatedTransaction.walletIdTo!,
+        amount: updatedTransaction.amount,
+        date: updatedTransaction.date,
+      });
+    } else {
+      await editTransaction(updatedTransaction);
+    }
 
     setEditingTransaction(null);
   };
@@ -121,12 +152,23 @@ function Activity() {
               onSubmit={
                 editingTransaction
                   ? handleUpdateTransaction
-                  : (transaction) => {
+                  : async (transaction) => {
                       if (!currentUser) {
                         return;
                       }
 
-                      setTransactions([...transactions, transaction]);
+                      if (transaction.type === "transfer") {
+                        await addTransfer({
+                          id: transaction.id,
+                          userId: transaction.userId,
+                          fromWalletId: transaction.walletId,
+                          toWalletId: transaction.walletIdTo!,
+                          amount: transaction.amount,
+                          date: transaction.date,
+                        });
+                      } else {
+                        await addTransaction(transaction);
+                      }
 
                       navigate("/");
                     }
@@ -139,7 +181,7 @@ function Activity() {
         <div className="activity__list">
           <h2>История операций</h2>
 
-          {transactions.length === 0 ? (
+          {activityTransactions.length === 0 ? (
             <p>Операций пока нет</p>
           ) : (
             <>
@@ -157,7 +199,7 @@ function Activity() {
                           : (category?.name ?? "Неизвестная категория")}
                       </strong>
 
-                      <span>{transaction.date}</span>
+                      <span>{formatDate(transaction.date)}</span>
                     </div>
 
                     <strong>
@@ -232,7 +274,7 @@ function Activity() {
                   {Math.min(
                     startIndex + ITEMS_PER_PAGE,
                     sortedTransactions.length,
-                  )}
+                  )}{" "}
                   из {sortedTransactions.length}
                 </div>
               )}

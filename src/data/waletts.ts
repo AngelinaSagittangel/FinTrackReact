@@ -1,11 +1,13 @@
 import type { TransactionType } from "../types/TransactionType";
+import type { TransferType } from "../types/TransferType";
 import type { WalletType } from "../types/WalletType";
 
 export function getTotalAmountWallets(
   transactions: TransactionType[],
   wallets: WalletType[],
+  transfers: TransferType[] = [],
 ) {
-  return getAmountWallet(transactions, wallets).reduce(
+  return getAmountWallet(transactions, wallets, transfers).reduce(
     (acc, item) => acc + item.amount,
     0,
   );
@@ -14,30 +16,48 @@ export function getTotalAmountWallets(
 export function getAmountWallet(
   transactions: TransactionType[],
   wallets: WalletType[],
+  transfers: TransferType[] = [],
 ) {
   return wallets.map((item) => {
     const walletTransactions = transactions.filter((transaction) => {
-      return (
-        transaction.walletId === item.id || transaction.walletIdTo === item.id
-      );
+      return transaction.walletId === item.id;
     });
 
-    const amount = walletTransactions.reduce((acc, itm) => {
-      if (itm.type === "expense") {
-        return acc - itm.amount;
-      } else if (itm.type === "income") {
-        return acc + itm.amount;
-      } else {
-        if (itm.walletId === item.id) {
-          return acc - itm.amount;
-        } else if (itm.walletIdTo === item.id) {
-          return acc + itm.amount;
-        }
+    const transactionAmount = walletTransactions.reduce((acc, transaction) => {
+      if (transaction.type === "expense") {
+        return acc - transaction.amount;
+      }
+
+      if (transaction.type === "income") {
+        return acc + transaction.amount;
       }
 
       return acc;
-    }, item.initialAmount);
+    }, 0);
 
-    return { ...item, amount: amount };
+    const walletTransfers = transfers.filter((transfer) => {
+      return (
+        transfer.fromWalletId === item.id || transfer.toWalletId === item.id
+      );
+    });
+
+    const transferAmount = walletTransfers.reduce((acc, transfer) => {
+      if (transfer.fromWalletId === item.id) {
+        return acc - transfer.amount;
+      }
+
+      if (transfer.toWalletId === item.id) {
+        return acc + transfer.amount;
+      }
+
+      return acc;
+    }, 0);
+
+    const amount = item.initialAmount + transactionAmount + transferAmount;
+
+    return {
+      ...item,
+      amount,
+    };
   });
 }
