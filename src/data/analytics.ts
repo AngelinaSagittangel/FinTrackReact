@@ -56,30 +56,47 @@ export function getMonthlyStatistics(
 ) {
   const periodTransactions = getTransactionsByPeriod(transactions, period);
 
-  const months = new Map<string, TransactionType[]>();
   const monthlyStats = new Map<string, ReturnType<typeof getPeriodSummary>>();
+
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  for (let i = period - 1; i >= 0; i--) {
+    const date = new Date(currentYear, currentMonth - i, 1);
+
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    const monthKey = formatDate(year, month, 1).slice(0, -3);
+
+    monthlyStats.set(monthKey, {
+      income: 0,
+      expense: 0,
+      balance: 0,
+    });
+  }
 
   periodTransactions.forEach((item) => {
     const month = item.date.slice(0, -3);
 
-    if (months.has(month)) {
-      const monthTransactions = months.get(month);
+    const currentStats = monthlyStats.get(month);
 
-      monthTransactions?.push(item);
-    } else {
-      months.set(month, [item]);
+    if (!currentStats) {
+      return;
     }
-  });
 
-  months.forEach((transactions, month) => {
-    const summary = getPeriodSummary(transactions);
+    if (item.type === "income") {
+      currentStats.income += item.amount;
+    } else {
+      currentStats.expense += item.amount;
+    }
 
-    monthlyStats.set(month, summary);
+    currentStats.balance = currentStats.income - currentStats.expense;
   });
 
   return monthlyStats;
 }
-
 export function getDailyStatistics(transactions: TransactionType[]) {
   const today = new Date();
   const year = today.getFullYear();
